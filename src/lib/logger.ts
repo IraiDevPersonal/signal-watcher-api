@@ -1,4 +1,4 @@
-import { ENVS } from "@/config/envs";
+import { ENVS } from "@/lib/config/envs";
 import winston from "winston";
 
 export const logger = winston.createLogger({

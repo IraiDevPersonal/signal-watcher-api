@@ -1,4 +1,5 @@
-export type ResponseModel<T, C extends number = number> = {
-  code: C;
+export type ApiResponse<T = unknown> = {
+  success: boolean;
   data: T;
+  correlationId: string;
 };
