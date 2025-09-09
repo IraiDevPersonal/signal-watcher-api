@@ -1,8 +1,9 @@
 import z from "zod";
 import { CustomError } from "../custom-error";
+import { NextFunction, Request, Response } from "express";
 
 export const validateSchema = (schema: z.ZodSchema) => {
-  return (req: any, res: any, next: any) => {
+  return (req: Request, res: Response, next: NextFunction) => {
     try {
       req.body = schema.parse(req.body);
       next();
