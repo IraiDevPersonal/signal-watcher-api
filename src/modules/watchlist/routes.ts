@@ -10,11 +10,10 @@ export class WatchListRoutes {
 
   static get routes(): Router {
     const router = Router();
-    const controller = this.controller;
 
-    router.get("/", controller.getAllWatchLists);
-    router.get("/:id", controller.getWatchListById);
-    router.post("/", validateSchema(CreateWatchListSchema), controller.createWatchList);
+    router.get("/", this.controller.getAllWatchLists);
+    router.get("/:id", this.controller.getWatchListById);
+    router.post("/", validateSchema(CreateWatchListSchema), this.controller.createWatchList);
 
     return router;
   }
