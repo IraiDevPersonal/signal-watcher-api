@@ -1,0 +1,13 @@
+
+node_modules/
+dist/
+build/
+
+.env
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+bun.lockb
+
+.vscode/*
+/src/generated/prisma
