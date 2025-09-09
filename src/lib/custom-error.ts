@@ -1,4 +1,5 @@
 import { Response } from "express";
+import z from "zod";
 
 export class CustomError extends Error {
   constructor(
@@ -42,10 +43,14 @@ export class CustomError extends Error {
     const defaultMessage = message ?? "Error desconocido";
     const defaultStatusCode = 500;
 
-    if (error instanceof CustomError) {
+    if (error instanceof z.ZodError) {
+      const issueMessages = error.issues
+        .map((issue) => `field [${issue.path.join(".")}] ${issue.message.toLocaleLowerCase()}`)
+        .join(", ");
+
       return {
-        statusCode: error.statusCode,
-        message: error.message,
+        statusCode: defaultStatusCode,
+        message: issueMessages || defaultMessage,
         stack: error.stack
       };
     }
@@ -54,6 +59,14 @@ export class CustomError extends Error {
       return {
         statusCode: defaultStatusCode,
         message: error.message || defaultMessage,
+        stack: error.stack
+      };
+    }
+
+    if (error instanceof CustomError) {
+      return {
+        statusCode: error.statusCode,
+        message: error.message,
         stack: error.stack
       };
     }
