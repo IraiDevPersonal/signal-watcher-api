@@ -10,6 +10,7 @@ import { memoryCache } from "@/lib/cache";
 
 export class EventService {
   private readonly bd: PrismaClient;
+  private readonly queryCacheKey = "event";
   private readonly watchListService: WatchListService;
 
   constructor(watchListService: WatchListService) {
@@ -56,12 +57,18 @@ export class EventService {
         }
       });
 
-      logger.info("Evento creado", { correlationId, eventId: event.id });
+      const eventModel = this.mapEventToModel(event);
+      const logInfo = { correlationId, eventId: eventModel.id };
 
-      memoryCache.del(["events"]);
+      logger.info("Evento creado", logInfo);
+
+      memoryCache.delByPrefix(this.queryCacheKey);
       logger.info("Cache de eventos limpiado", { correlationId });
 
-      return this.mapEventToModel(event);
+      memoryCache.set(memoryCache.buildCacheKey(this.queryCacheKey, [eventModel.id]), eventModel);
+      logger.info("Evento guardado en cache", logInfo);
+
+      return eventModel;
     } catch (error) {
       logger.error("Error al crear evento", {
         correlationId,
@@ -73,7 +80,11 @@ export class EventService {
 
   getAllEvents = async (filters: EventFilters, correlationId: string): Promise<EventModel[]> => {
     try {
-      const cacheKey = ["events", filters.watchListId];
+      const cacheKey = memoryCache.buildCacheKey(
+        this.queryCacheKey,
+        [filters.watchListId ? filters.watchListId : ""],
+        "list"
+      );
       const cachedEvents = memoryCache.get<EventModel[]>(cacheKey);
 
       if (cachedEvents) {

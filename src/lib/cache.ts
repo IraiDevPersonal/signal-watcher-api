@@ -1,43 +1,42 @@
-type CacheKey = (string | undefined)[];
-
 // implementacion para caching de datos en memoria (posibilidad de implementar redis desde aqui)
 export class MemoryCache {
   private cache = new Map<string, { data: any; expiresAt: number }>();
 
-  private buildKey = (cacheKey: CacheKey) => {
-    return cacheKey
-      .filter((c) => c !== undefined)
-      .map(String)
-      .join("-");
-  };
-
-  set(key: CacheKey, data: any, ttlSeconds: number = 60) {
+  set(key: string, data: any, ttlSeconds: number = 60) {
     const expiresAt = Date.now() + ttlSeconds * 1000;
-    this.cache.set(this.buildKey(key), { data, expiresAt });
+    this.cache.set(key, { data, expiresAt });
   }
 
-  get<T>(key: CacheKey): T | null {
-    const entry = this.cache.get(this.buildKey(key));
+  get<T>(key: string): T | null {
+    const entry = this.cache.get(key);
 
     if (!entry) return null;
     if (Date.now() > entry.expiresAt) {
-      this.cache.delete(this.buildKey(key));
+      this.del(key);
       return null;
     }
 
     return entry.data as T;
   }
 
-  del(key: CacheKey) {
-    for (const k of this.cache.keys()) {
-      if (k.includes(this.buildKey(key))) {
-        this.cache.delete(k);
+  del(key: string) {
+    this.cache.delete(key);
+  }
+
+  delByPrefix(prefix: string) {
+    for (const key of this.cache.keys()) {
+      if (key.startsWith(prefix)) {
+        this.del(key);
       }
     }
   }
 
   clear() {
     this.cache.clear();
+  }
+
+  buildCacheKey(key: string, value: string[], type: "list" | "unique" = "unique"): string {
+    return [`${key}:${type}`, value.join("-")].filter(Boolean).join(":");
   }
 }
 

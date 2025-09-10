@@ -15,6 +15,7 @@ type WatchListWithCount = Prisma.WatchListGetPayload<{
 
 export class WatchListService {
   private readonly bd: PrismaClient;
+  private readonly queryCacheKey = "watchlist";
 
   constructor() {
     this.bd = new PrismaClient();
@@ -51,15 +52,18 @@ export class WatchListService {
         }
       });
 
-      logger.info("Watchlist creada exitosamente", {
-        correlationId,
-        watchListId: watchList.id
-      });
+      const watchListModel = this.mapWatchListToModel(watchList);
+      const logInfo = { correlationId, watchListId: watchListModel.id };
 
-      memoryCache.del(["watchlist"]);
+      logger.info("Watchlist creada exitosamente", logInfo);
+
+      memoryCache.delByPrefix(this.queryCacheKey);
       logger.info("Cache de watchlists limpiado", { correlationId });
 
-      return this.mapWatchListToModel(watchList);
+      memoryCache.set(memoryCache.buildCacheKey(this.queryCacheKey, [watchListModel.id]), watchListModel);
+      logger.info("Watchlist guardada en cache", logInfo);
+
+      return watchListModel;
     } catch (error) {
       const { message, stack } = CustomError.getErrorData(error);
       logger.error("Error al crear watchlist", {
@@ -73,7 +77,7 @@ export class WatchListService {
 
   getAllWatchLists = async (correlationId: string): Promise<WatchListModel[]> => {
     try {
-      const cacheKey = ["watchlists"];
+      const cacheKey = memoryCache.buildCacheKey(this.queryCacheKey, [], "list");
       const cachedWatchLists = memoryCache.get<WatchListModel[]>(cacheKey);
 
       if (cachedWatchLists) {
@@ -111,11 +115,15 @@ export class WatchListService {
 
   getWatchListById = async (id: string, correlationId: string): Promise<WatchListModel | null> => {
     try {
-      const cacheKey = ["watchlist", id];
+      const cacheKey = memoryCache.buildCacheKey(this.queryCacheKey, [id], "unique");
       const cachedWatchList = memoryCache.get<WatchListModel>(cacheKey);
 
       if (cachedWatchList) {
-        logger.info("Se obtuvo watchlist del cache", { correlationId, cacheKey, watchListId: id });
+        logger.info("Se obtuvo watchlist del cache", {
+          correlationId,
+          cacheKey,
+          watchListId: id
+        });
         return cachedWatchList;
       }
 
@@ -134,12 +142,12 @@ export class WatchListService {
         return null;
       }
 
-      const mappedWatchList = this.mapWatchListToModel(watchList);
+      const watchListModel = this.mapWatchListToModel(watchList);
 
-      memoryCache.set(cacheKey, mappedWatchList);
+      memoryCache.set(cacheKey, watchListModel);
       logger.info("Cache de watchlist actualizado", { correlationId, watchListId: id });
 
-      return mappedWatchList;
+      return watchListModel;
     } catch (error) {
       logger.error(`Error al obtener watchlist para ID: ${id}`, {
         correlationId,
