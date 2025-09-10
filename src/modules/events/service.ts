@@ -6,6 +6,7 @@ import { logger } from "@/lib/logger";
 import { CustomError } from "@/lib/custom-error";
 import { WatchListService } from "../watchlist/service";
 import { EventFilters } from "./models/filters";
+import { memoryCache } from "@/lib/cache";
 
 export class EventService {
   private readonly bd: PrismaClient;
@@ -31,12 +32,16 @@ export class EventService {
   createEvent = async (payload: CreateEventPayload, correlationId: string): Promise<EventModel> => {
     try {
       const ai = enrichEvent(payload.description);
+      logger.info("Evento enriquecido con IA", { correlationId, ai });
+
+      logger.info("Buscando watchlist", { correlationId, watchListId: payload.watchListId });
       const existingWatchList = await this.watchListService.getWatchListById(
         payload.watchListId,
         correlationId
       );
 
       if (!existingWatchList) {
+        logger.info("Watchlist no encontrada", { correlationId, watchListId: payload.watchListId });
         throw CustomError.notFound(`El watchlist: ${payload.watchListId} no se encontro`);
       }
 
@@ -51,9 +56,15 @@ export class EventService {
         }
       });
 
+      logger.info("Evento creado", { correlationId, eventId: event.id });
+
+      memoryCache.del(["events"]);
+      logger.info("Cache de eventos limpiado", { correlationId });
+
       return this.mapEventToModel(event);
     } catch (error) {
       logger.error("Error al crear evento", {
+        correlationId,
         error: CustomError.getErrorData(error).message
       });
       throw CustomError.bdError(error);
@@ -62,6 +73,14 @@ export class EventService {
 
   getAllEvents = async (filters: EventFilters, correlationId: string): Promise<EventModel[]> => {
     try {
+      const cacheKey = ["events", filters.watchListId];
+      const cachedEvents = memoryCache.get<EventModel[]>(cacheKey);
+
+      if (cachedEvents) {
+        logger.info("Se obtuvieron eventos del cache", { correlationId, cacheKey });
+        return cachedEvents;
+      }
+
       const result = await this.bd.event.findMany({
         where: {
           watchListId: filters.watchListId
@@ -76,7 +95,12 @@ export class EventService {
 
       logger.info(logMessage, { correlationId, filters });
 
-      return result.map(this.mapEventToModel);
+      const events = result.map(this.mapEventToModel);
+
+      memoryCache.set(cacheKey, events);
+      logger.info("Cache de eventos actualizado", { correlationId });
+
+      return events;
     } catch (error) {
       logger.error("Error al obtener eventos", {
         correlationId,
