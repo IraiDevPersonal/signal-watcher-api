@@ -1,4 +1,4 @@
-import { enrichEvent } from "@/lib/ai";
+import { enrichEvent } from "./utils/enrich-event";
 import { Event, PrismaClient } from "@prisma/client";
 import { CreateEventPayload } from "./models/create-event-payload";
 import { EventModel } from "./models/event";
@@ -32,9 +32,6 @@ export class EventService {
 
   createEvent = async (payload: CreateEventPayload, correlationId: string): Promise<EventModel> => {
     try {
-      const ai = await enrichEvent(payload.description, correlationId);
-      logger.info("Evento enriquecido con IA", { correlationId, ai });
-
       logger.info("Buscando watchlist", { correlationId, watchListId: payload.watchListId });
       const existingWatchList = await this.watchListService.getWatchListById(
         payload.watchListId,
@@ -46,13 +43,16 @@ export class EventService {
         throw CustomError.notFound(`El watchlist: ${payload.watchListId} no se encontro`);
       }
 
+      const aiResponse = await enrichEvent(payload.description, existingWatchList.terms, correlationId);
+      logger.info("Evento enriquecido con IA", { correlationId, ai: aiResponse });
+
       const event = await this.bd.event.create({
         data: {
           type: payload.type,
           description: payload.description,
-          severity: ai.severity,
-          aiSummary: ai.aiSummary,
-          aiSuggestion: ai.aiSuggestion,
+          severity: aiResponse.severity,
+          aiSummary: aiResponse.aiSummary,
+          aiSuggestion: aiResponse.aiSuggestion,
           watchListId: payload.watchListId
         }
       });

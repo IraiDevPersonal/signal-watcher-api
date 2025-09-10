@@ -1,8 +1,11 @@
-import { AIResponse } from "@/types/ai";
+import { Severity } from "@prisma/client";
 
-export type EventModel = AIResponse & {
+export type EventModel = {
   id: string;
   type: string;
-  description: string;
+  aiSummary: string;
+  severity: Severity;
   watchListId: string;
+  description: string;
+  aiSuggestion: string;
 };

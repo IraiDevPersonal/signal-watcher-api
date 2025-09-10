@@ -1,104 +1,181 @@
-# Airline REST API
+# Signal Watcher API
 
-Esta es una API REST para generar el check-in de pasajeros en un vuelvo. La API esta construida con Node.js (v22.14.0), Express y TypeScript. Utiliza Prisma como ORM para interactuar con una base de datos MySQL.
+Una API REST para monitoreo y análisis de eventos de seguridad con capacidades de inteligencia artificial y sistema de watchlists. Esta aplicación permite crear listas de vigilancia con términos específicos, detectar eventos relacionados y enriquecerlos automáticamente con análisis de IA.
 
-## Cómo empezar
+## Características Principales
 
-Instrucciones para obtener una copia del proyecto y ejecutarlo en tu máquina localmente para desarrollo y pruebas.
+- **Sistema de Watchlists**: Creación y gestión de listas de vigilancia con términos personalizables
+- **Detección de Eventos**: Monitoreo automático de eventos basados en los términos de las watchlists
+- **Enriquecimiento con IA**: Análisis automático de eventos usando OpenAI para clasificación de severidad y sugerencias
+- **Sistema de Caché**: Implementación de caché en memoria con posibilidad de migrar a Redis
+- **Trazabilidad**: Sistema de correlationId para seguimiento de requests a través de toda la aplicación
+- **Logging Estructurado**: Sistema de logs completo con Winston para monitoreo y debugging
+
+## Arquitectura del Proyecto
+
+```
+src/
+├── lib/                    # Utilidades y servicios base
+│   ├── middlewares/        # Middlewares de Express
+│   ├── ai.ts              # Servicio de IA con OpenAI
+│   ├── cache.ts           # Sistema de caché en memoria
+│   ├── custom-error.ts    # Manejo centralizado de errores
+│   └── logger.ts          # Configuración de logging
+├── modules/               # Módulos de negocio
+│   ├── events/           # Gestión de eventos
+│   └── watchlist/        # Gestión de watchlists
+├── types/                # Definiciones de tipos TypeScript
+└── index.ts              # Punto de entrada de la aplicación
+```
+
+## Implementaciones Técnicas
+
+### Sistema de Inteligencia Artificial
+
+La aplicación integra OpenAI GPT-3.5-turbo para el enriquecimiento automático de eventos detectados. La implementación incluye:
+
+**¿Por qué esta implementación?**
+
+- **Análisis Automático**: Cada evento detectado es analizado automáticamente para determinar su severidad (LOW, MED, HIGH, CRITICAL) y generar sugerencias de acción
+- **Fallback Robusto**: Si OpenAI no está disponible o falla, el sistema utiliza un mock inteligente basado en patrones de texto
+
+**Funcionamiento**:
+
+```typescript
+// Si OpenAI falla o no está configurado, se usa el mock automáticamente
+const aiResponse = await enrichEvent(description, correlationId);
+```
+
+El mock analiza patrones en el texto del evento para clasificar severidad y generar sugerencias apropiadas, garantizando que la aplicación siempre funcione independientemente de la disponibilidad de servicios externos.
+
+### Sistema de Caché
+
+Se implementó un sistema de caché en memoria con arquitectura de adaptador que facilita futuras migraciones:
+
+**¿Por qué esta implementación?**
+
+- **Rendimiento**: Reduce significativamente las consultas a la base de datos para watchlists y eventos frecuentemente accedidos
+- **Flexibilidad**: El diseño permite cambiar fácilmente a Redis u otros sistemas de caché
+- **Simplicidad**: Para el alcance actual, el caché en memoria es suficiente y no requiere infraestructura adicional
+
+**Características**:
+
+- TTL configurable por entrada
+- Limpieza automática de entradas expiradas
+- Invalidación por prefijos para actualizaciones eficientes
+- Construcción inteligente de claves de caché
+
+**Migración a Redis**:
+El adaptador está diseñado para facilitar la implementación de Redis cuando sea necesario. Solo requiere implementar la misma interfaz en una nueva clase `RedisCache` sin cambiar el código de negocio.
+
+### Sistema de Trazabilidad (CorrelationId)
+
+Cada request recibe un `correlationId` único que se propaga a través de toda la aplicación:
+
+**Beneficios**:
+
+- **Debugging**: Facilita el seguimiento de requests específicos en los logs
+- **Monitoreo**: Permite correlacionar eventos y errores con requests específicos
+- **Auditoría**: Proporciona trazabilidad completa de las operaciones
+
+**Implementación**:
+
+- Middleware que genera o extrae el correlationId del header `x-correlation-id`
+- Propagación automática a través de servicios, logs y respuestas
+- Inclusión en todas las respuestas de error para facilitar el soporte
+
+## Instalación y Configuración
 
 ### Prerrequisitos
 
-- [Node.js](https://nodejs.org/) (v22.14.0 o mayor)
-- [npm](https://www.npmjs.com/) o [pnpm](https://pnpm.io) (o gestor cualquier otro gestor de paquetes compatible)
-- [Docker](https://www.docker.com/) (opcional pero es la forma que se utilizo en el desarrollo)
+- Node.js (v18 o superior)
+- npm o pnpm
+- opcional: docker para la base de datos Postgres (recomendado, es lo que se uso en desarrollo)
 
 ### Instalación
 
-1.  Clona el repositorio
-    ```sh
-    git clone git@github.com:IraiDevPersonal/airline-rest-api.git
-    ```
-2.  Instala los paquetes
-    ```sh
-    npm install
-    o
-    pnpm install
-    ```
-3.  Crea un archivo `.env` en el directorio raíz y agrega las siguientes variables de entorno:
-    (Se encuentra un archivo `.env.example` que sirve como guia)
-    ```
-    PORT:
-    MYSQL_DATABASE:
-    MYSQL_USER:
-    MYSQL_PASSWORD:
-    MYSQL_ROOT_PASSWORD:
-    DATABASE_URL:
-    ```
-4.  Generar cliente de prisma (se recomienda usar docker para levantar la BD en desarrollo, mas abajo se detalla lo necesario con respecto a docker)
-    ```sh
-    npx prisma generate
-    ```
-5.  Inicia el servidor
-    ```sh
-    npm run dev
-    o
-    pnpm dev
-    ```
+1. Clona el repositorio:
 
-## Ejecutar con Docker (Para desarrollo)
+```bash
+git clone git@github.com:IraiDevPersonal/signal-watcher-api.git
+cd signal-watcher-api
+```
 
-1.  Tener Docker y Docker Compose instalados.
-2.  Necesitas la imagen de MySQL
-3.  Construye y ejecuta los contenedores
-    ```sh
-    docker-compose up -d
-    ```
-4.  Ejecutar los comandos de migracion y generacion de esquemas de prisma (si no lo ejecutaste antes)
-    ```sh
-    npx prisma generate
-    ```
+2. Instala las dependencias:
 
-## Endpoints de la API
+```bash
+pnpm install
+```
 
-Los siguientes son los endpoints de la API disponibles:
+3. Configura las variables de entorno:
 
-### Vuelos
+```bash
+cp .env.example .env
+# Edita el archivo .env con tus configuraciones
+```
 
-- **GET** `/flights/:id/passengers`
-  - Descripción: Obtiene los pasajeros de un vuelo específico y se les asigna un asiento (check-in).
-  - Parámetros:
-    - `id`: El ID del vuelo (debe ser un numero entero positivo).
-  - Ejemplo de respuesta:
-    ```json
-    {
-      "flightId": 1,
-      "takeoffDateTime": 1688207580,
-      "takeoffAirport": "Aeropuerto Internacional Arturo Merino Benitez, Chile",
-      "landingDateTime": 1688221980,
-      "landingAirport": "Aeropuerto Internacional Jorge Cháve, Perú",
-      "airplaneId": 1,
-      "passengers": [
-        {
-          "passengerId": 98,
-          "dni": "172426876",
-          "name": "Abril",
-          "age": 28,
-          "country": "Chile",
-          "boardingPassId": 496,
-          "purchaseId": 3,
-          "seatTypeId": 3,
-          "seatId": 15
-        }
-      ]
-    }
-    ```
+4. Configura la base de datos:
+
+```bash
+npx prisma generate
+npx prisma db push
+```
+
+5. Inicia el servidor:
+
+```bash
+pnpm dev
+```
+
+## Variables de Entorno
+
+```env
+PORT
+POSTGRES_USER
+POSTGRES_DB
+POSTGRES_PASSWORD
+POSTGRES_URL
+LOG_LEVEL
+OPENAI_API_KEY
+```
+
+## Uso de la API
+
+### Endpoints Principales
+
+**Watchlists**:
+
+- `POST /api/v1/watchlists` - Crear nueva watchlist
+- `GET /api/v1/watchlists` - Obtener todas las watchlists
+- `GET /api/v1/watchlists/:id` - Obtener watchlist específica
+
+**Events**:
+
+- `POST /api/v1/events` - Crear nuevo evento
+- `GET /api/v1/events` - Obtener eventos con filtros
+
+### Ejemplo de Uso
+
+```javascript
+// Crear una watchlist
+const watchlist = await fetch("${BASE_URL}/api/v1/watchlists", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    name: "Seguridad Crítica",
+    terms: ["malware", "breach", "ransomware"]
+  })
+});
+
+// El sistema automáticamente detectará eventos que contengan estos términos
+// y los enriquecerá con análisis de IA
+```
 
 ## Tecnologías Utilizadas
 
-- [Node.js](https://nodejs.org/)
-- [Express](https://expressjs.com/)
-- [TypeScript](https://www.typescriptlang.org/)
-- [Prisma](https://www.prisma.io/)
-- [MySQL](https://www.mysql.com/)
-- [Docker](https://www.docker.com/)
-- [Zod](https://zod.dev/)
+- **Backend**: Node.js, Express, TypeScript
+- **Base de Datos**: Prisma ORM
+- **IA**: OpenAI GPT-3.5-turbo
+- **Logging**: Winston
+- **Validación**: Zod
+- **Desarrollo**: ESLint, Prettier, ts-node-dev

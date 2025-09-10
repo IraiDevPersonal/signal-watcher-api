@@ -1,5 +1,14 @@
 // implementacion para caching de datos en memoria (posibilidad de implementar redis desde aqui)
-export class MemoryCache {
+type MemoryCacheImpl = {
+  clear(): void;
+  del(key: string): void;
+  get<T>(key: string): T | null;
+  delByPrefix(prefix: string): void;
+  set(key: string, data: any, ttlSeconds: number): void;
+  buildCacheKey(key: string, value: string[], type: "list" | "unique"): string;
+};
+
+export class MemoryCache implements MemoryCacheImpl {
   private cache = new Map<string, { data: any; expiresAt: number }>();
 
   set(key: string, data: any, ttlSeconds: number = 60) {
