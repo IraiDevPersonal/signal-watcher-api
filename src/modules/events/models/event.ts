@@ -1,9 +1,8 @@
-export type EventModel = {
+import { AIResponse } from "@/types/ai";
+
+export type EventModel = AIResponse & {
   id: string;
   type: string;
   description: string;
-  severity: string;
-  aiSummary: string;
-  aiSuggestion: string;
   watchListId: string;
 };
