@@ -2,7 +2,7 @@ import z from "zod";
 import { CustomError } from "../custom-error";
 import { NextFunction, Request, Response } from "express";
 
-export const validateSchema = (schema: z.ZodSchema) => {
+export const validateSchemaMiddleware = (schema: z.ZodSchema) => {
   return (req: Request, res: Response, next: NextFunction) => {
     try {
       req.body = schema.parse(req.body);

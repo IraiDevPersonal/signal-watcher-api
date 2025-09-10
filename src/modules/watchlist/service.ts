@@ -71,7 +71,7 @@ export class WatchListService {
     try {
       logger.info("Obteniendo todas las watchlists", { correlationId });
 
-      const watchLists = (await this.bd.watchList.findMany({
+      const watchLists = await this.bd.watchList.findMany({
         include: {
           _count: {
             select: { events: true }
@@ -80,7 +80,7 @@ export class WatchListService {
         orderBy: {
           createdAt: "desc"
         }
-      })) as WatchListWithCount[];
+      });
 
       return watchLists.map(this.mapWatchListToModel);
     } catch (error) {

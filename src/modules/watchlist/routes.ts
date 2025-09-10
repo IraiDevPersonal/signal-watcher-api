@@ -1,8 +1,9 @@
 import { Router } from "express";
 import { WatchListService } from "./service";
 import { WatchListController } from "./controller";
-import { validateSchema } from "@/lib/middlewares/validate-schema";
+import { validateSchemaMiddleware } from "@/lib/middlewares/validate-schema.middleware";
 import { CreateWatchListSchema } from "./models/create-watch-list-payload";
+import { correlationIdMiddleware } from "@/lib/middlewares/correlation-id.middleware";
 
 export class WatchListRoutes {
   private static readonly service = new WatchListService();
@@ -11,9 +12,13 @@ export class WatchListRoutes {
   static get routes(): Router {
     const router = Router();
 
-    router.get("/", this.controller.getAllWatchLists);
-    router.get("/:id", this.controller.getWatchListById);
-    router.post("/", validateSchema(CreateWatchListSchema), this.controller.createWatchList);
+    router.get("/", correlationIdMiddleware, this.controller.getAllWatchLists);
+    router.get("/:id", correlationIdMiddleware, this.controller.getWatchListById);
+    router.post(
+      "/",
+      [correlationIdMiddleware, validateSchemaMiddleware(CreateWatchListSchema)],
+      this.controller.createWatchList
+    );
 
     return router;
   }
