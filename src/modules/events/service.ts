@@ -32,7 +32,7 @@ export class EventService {
 
   createEvent = async (payload: CreateEventPayload, correlationId: string): Promise<EventModel> => {
     try {
-      const ai = enrichEvent(payload.description);
+      const ai = await enrichEvent(payload.description, correlationId);
       logger.info("Evento enriquecido con IA", { correlationId, ai });
 
       logger.info("Buscando watchlist", { correlationId, watchListId: payload.watchListId });
