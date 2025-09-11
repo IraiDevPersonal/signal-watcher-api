@@ -6,7 +6,7 @@ Una API REST para monitoreo y análisis de eventos de seguridad con capacidades 
 
 - **Sistema de Watchlists**: Creación y gestión de listas de vigilancia con términos personalizables
 - **Detección de Eventos**: Monitoreo automático de eventos basados en los términos de las watchlists
-- **Enriquecimiento con IA**: Análisis automático de eventos usando OpenAI para clasificación de severidad y sugerencias
+- **Enriquecimiento con IA**: Análisis automático de eventos usando Google Gemini AI para clasificación de severidad y sugerencias
 - **Sistema de Caché**: Implementación de caché en memoria con posibilidad de migrar a Redis
 - **Trazabilidad**: Sistema de correlationId para seguimiento de requests a través de toda la aplicación
 - **Logging Estructurado**: Sistema de logs completo con Winston para monitoreo y debugging
@@ -32,21 +32,28 @@ src/
 
 ### Sistema de Inteligencia Artificial
 
-La aplicación integra OpenAI GPT-3.5-turbo para el enriquecimiento automático de eventos detectados. La implementación incluye:
+La aplicación integra Google Gemini AI (gemini-2.5-flash) para el enriquecimiento automático de eventos detectados. La implementación incluye:
 
 **¿Por qué esta implementación?**
 
 - **Análisis Automático**: Cada evento detectado es analizado automáticamente para determinar su severidad (LOW, MED, HIGH, CRITICAL) y generar sugerencias de acción
-- **Fallback Robusto**: Si OpenAI no está disponible o falla, el sistema utiliza un mock inteligente basado en patrones de texto
+- **Respuesta Estructurada**: Gemini AI está configurado para devolver respuestas en formato JSON, facilitando el procesamiento
+- **Modelo Avanzado**: Gemini 2.5 Flash ofrece excelente rendimiento y capacidades de análisis contextual
 
 **Funcionamiento**:
 
 ```typescript
-// Si OpenAI falla o no está configurado, se usa el mock automáticamente
-const aiResponse = await enrichEvent(description, correlationId);
+// Análisis automático con Gemini AI
+const aiResponse = await aiClient({
+  prompt: description,
+  correlationId,
+  systemInstruction: "Analiza el evento y clasifica su severidad"
+});
 ```
 
-El mock analiza patrones en el texto del evento para clasificar severidad y generar sugerencias apropiadas, garantizando que la aplicación siempre funcione independientemente de la disponibilidad de servicios externos.
+El sistema utiliza instrucciones del sistema personalizadas para guiar el análisis y garantizar respuestas consistentes y útiles.
+
+En caso de fallar, se usara un fallback (mock IA).
 
 ### Sistema de Caché
 
@@ -57,6 +64,11 @@ Se implementó un sistema de caché en memoria con arquitectura de adaptador que
 - **Rendimiento**: Reduce significativamente las consultas a la base de datos para watchlists y eventos frecuentemente accedidos
 - **Flexibilidad**: El diseño permite cambiar fácilmente a Redis u otros sistemas de caché
 - **Simplicidad**: Para el alcance actual, el caché en memoria es suficiente y no requiere infraestructura adicional
+
+**¿Por qué esta no se uso Redis?**
+
+- **Costo**: No manejo de manera la api de Redis y no tengo conocimiento suficiente como para implementarla.
+- **Flexibilidad**: El diseño permite cambiar fácilmente a Redis u otros sistemas de caché
 
 **Características**:
 
@@ -136,46 +148,259 @@ POSTGRES_DB
 POSTGRES_PASSWORD
 POSTGRES_URL
 LOG_LEVEL
-OPENAI_API_KEY
+GEMINI_API_KEY
 ```
 
 ## Uso de la API
 
-### Endpoints Principales
+### Health Check
 
-**Watchlists**:
+#### Verificar Estado de la Aplicación
+**GET** `/health`
 
-- `POST /api/v1/watchlists` - Crear nueva watchlist
-- `GET /api/v1/watchlists` - Obtener todas las watchlists
-- `GET /api/v1/watchlists/:id` - Obtener watchlist específica
+Verifica que la aplicación esté funcionando correctamente.
 
-**Events**:
+**Response (200):**
 
-- `POST /api/v1/events` - Crear nuevo evento
-- `GET /api/v1/events` - Obtener eventos con filtros
+```json
+{
+  "status": "healthy",
+  "service": "Signal Watcher API",
+  "version": "1.0.0",
+  "timestamp": "2024-09-10T21:48:19.000Z"
+}
+```
 
-### Ejemplo de Uso
+### Endpoints de Watchlists
 
-```javascript
-// Crear una watchlist
-const watchlist = await fetch("${BASE_URL}/api/v1/watchlists", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    name: "Seguridad Crítica",
-    terms: ["malware", "breach", "ransomware"]
-  })
-});
+#### 1. Crear Watchlist
 
-// El sistema automáticamente detectará eventos que contengan estos términos
-// y los enriquecerá con análisis de IA
+**POST** `/api/v1/watchlists`
+
+Crea una nueva lista de vigilancia con términos específicos.
+
+**Request:**
+
+```json
+{
+  "name": "Seguridad Crítica",
+  "terms": ["malware", "breach", "ransomware", "phishing"]
+}
+```
+
+**Response (201):**
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "clm123abc456def789",
+    "name": "Seguridad Crítica",
+    "terms": ["malware", "breach", "ransomware", "phishing"],
+    "createdAt": "2024-09-10T21:00:00.000Z",
+    "updatedAt": "2024-09-10T21:00:00.000Z"
+  },
+  "correlationId": "req-abc123-def456"
+}
+```
+
+#### 2. Obtener Todas las Watchlists
+
+**GET** `/api/v1/watchlists`
+
+Obtiene todas las listas de vigilancia existentes.
+
+**Response (200):**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "clm123abc456def789",
+      "name": "Seguridad Crítica",
+      "terms": ["malware", "breach", "ransomware", "phishing"],
+      "createdAt": "2024-09-10T21:00:00.000Z",
+      "updatedAt": "2024-09-10T21:00:00.000Z"
+    },
+    {
+      "id": "clm789xyz123abc456",
+      "name": "Monitoreo Red",
+      "terms": ["ddos", "intrusion", "firewall"],
+      "createdAt": "2024-09-10T20:30:00.000Z",
+      "updatedAt": "2024-09-10T20:30:00.000Z"
+    }
+  ],
+  "correlationId": "req-xyz789-abc123"
+}
+```
+
+#### 3. Obtener Watchlist por ID
+
+**GET** `/api/v1/watchlists/:id`
+
+Obtiene una lista de vigilancia específica por su ID.
+
+**Response (200):**
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "clm123abc456def789",
+    "name": "Seguridad Crítica",
+    "terms": ["malware", "breach", "ransomware", "phishing"],
+    "createdAt": "2024-09-10T21:00:00.000Z",
+    "updatedAt": "2024-09-10T21:00:00.000Z"
+  },
+  "correlationId": "req-def456-ghi789"
+}
+```
+
+### Endpoints de Events
+
+#### 1. Crear/Simular Evento
+
+**POST** `/api/v1/events`
+
+Crea un nuevo evento que será analizado automáticamente por el sistema de IA.
+
+**Request:**
+
+```json
+{
+  "type": "security_alert",
+  "description": "Se detectó actividad sospechosa de malware en el servidor principal",
+  "watchListId": "clm123abc456def789"
+}
+```
+
+**Response (201):**
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "clm456def789ghi012",
+    "type": "security_alert",
+    "description": "Se detectó actividad sospechosa de malware en el servidor principal",
+    "severity": "HIGH",
+    "aiSummary": "Evento de seguridad crítico: Detección de malware activo",
+    "aiSuggestion": "Aislar inmediatamente el servidor afectado y ejecutar análisis completo de malware",
+    "watchListId": "clm123abc456def789",
+    "createdAt": "2024-09-10T21:15:00.000Z"
+  },
+  "correlationId": "req-ghi012-jkl345"
+}
+```
+
+#### 2. Obtener Todos los Eventos
+
+**GET** `/api/v1/events`
+
+Obtiene todos los eventos del sistema.
+
+**Response (200):**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "clm456def789ghi012",
+      "type": "security_alert",
+      "description": "Se detectó actividad sospechosa de malware en el servidor principal",
+      "severity": "HIGH",
+      "aiSummary": "Evento de seguridad crítico: Detección de malware activo",
+      "aiSuggestion": "Aislar inmediatamente el servidor afectado y ejecutar análisis completo de malware",
+      "watchListId": "clm123abc456def789",
+      "createdAt": "2024-09-10T21:15:00.000Z"
+    },
+    {
+      "id": "clm789ghi012jkl345",
+      "type": "network_alert",
+      "description": "Intento de intrusión detectado en firewall perimetral",
+      "severity": "MED",
+      "aiSummary": "Actividad de red sospechosa bloqueada por firewall",
+      "aiSuggestion": "Revisar logs del firewall y actualizar reglas de seguridad",
+      "watchListId": "clm789xyz123abc456",
+      "createdAt": "2024-09-10T21:10:00.000Z"
+    }
+  ],
+  "correlationId": "req-jkl345-mno678"
+}
+```
+
+#### 3. Filtrar Eventos por Watchlist
+
+**GET** `/api/v1/events?watchlistId=clm123abc456def789`
+
+Obtiene eventos filtrados por una watchlist específica.
+
+**Response (200):**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "clm456def789ghi012",
+      "type": "security_alert",
+      "description": "Se detectó actividad sospechosa de malware en el servidor principal",
+      "severity": "HIGH",
+      "aiSummary": "Evento de seguridad crítico: Detección de malware activo",
+      "aiSuggestion": "Aislar inmediatamente el servidor afectado y ejecutar análisis completo de malware",
+      "watchListId": "clm123abc456def789",
+      "createdAt": "2024-09-10T21:15:00.000Z"
+    }
+  ],
+  "correlationId": "req-mno678-pqr901"
+}
+```
+
+### Respuestas de Error
+
+Todos los endpoints pueden devolver errores con el siguiente formato:
+
+**Error 400 - Bad Request:**
+
+```json
+{
+  "success": false,
+  "error": "Validation failed",
+  "message": "El campo 'name' es requerido",
+  "correlationId": "req-error-123"
+}
+```
+
+**Error 404 - Not Found:**
+
+```json
+{
+  "success": false,
+  "error": "Not Found",
+  "message": "No se encontró la watchlist",
+  "correlationId": "req-error-456"
+}
+```
+
+**Error 500 - Internal Server Error:**
+
+```json
+{
+  "success": false,
+  "error": "Internal Server Error",
+  "message": "Error interno del servidor",
+  "correlationId": "req-error-789"
+}
 ```
 
 ## Tecnologías Utilizadas
 
 - **Backend**: Node.js, Express, TypeScript
-- **Base de Datos**: Prisma ORM
-- **IA**: OpenAI GPT-3.5-turbo
+- **Base de Datos**: PostgreSQL con Prisma ORM
+- **IA**: Google Gemini AI (gemini-2.5-flash)
 - **Logging**: Winston
 - **Validación**: Zod
+- **Seguridad**: Helmet, CORS
 - **Desarrollo**: ESLint, Prettier, ts-node-dev
