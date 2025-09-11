@@ -3,6 +3,7 @@ import { logger } from "@/lib/logger";
 import { ApiResponse } from "@/types/shared";
 import { Request, Response } from "express";
 import { WatchListService } from "./service";
+import { WatchListModel } from "./models/watch-list";
 
 export class WatchListController {
   private readonly service: WatchListService;
@@ -22,7 +23,7 @@ export class WatchListController {
 
       const watchList = await this.service.createWatchList(req.body, correlationId);
 
-      const response: ApiResponse = {
+      const response: ApiResponse<WatchListModel> = {
         success: true,
         data: watchList,
         correlationId
@@ -47,7 +48,7 @@ export class WatchListController {
 
       const watchLists = await this.service.getAllWatchLists(correlationId);
 
-      const response: ApiResponse = {
+      const response: ApiResponse<WatchListModel[]> = {
         success: true,
         data: watchLists,
         correlationId
@@ -75,7 +76,7 @@ export class WatchListController {
         throw CustomError.notFound("No se encontró la watchlist");
       }
 
-      const response: ApiResponse = {
+      const response: ApiResponse<WatchListModel> = {
         success: true,
         data: watchList,
         correlationId

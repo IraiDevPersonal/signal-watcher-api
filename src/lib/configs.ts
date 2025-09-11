@@ -8,5 +8,5 @@ export const ENVS = {
   POSTGRES_PASSWORD: get("POSTGRES_PASSWORD").required().asString(),
   POSTGRES_URL: get("POSTGRES_URL").required().asString(),
   LOG_LEVEL: get("LOG_LEVEL").default("info").asString(),
-  OPENAI_API_KEY: get("OPENAI_API_KEY").required().asString()
+  GEMINI_API_KEY: get("GEMINI_API_KEY").required().asString()
 };

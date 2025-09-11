@@ -4,6 +4,7 @@ import { logger } from "@/lib/logger";
 import { CustomError } from "@/lib/custom-error";
 import { ApiResponse } from "@/types/shared";
 import { EventFilters } from "./models/filters";
+import { EventModel } from "./models/event";
 
 export class EventController {
   private readonly service: EventService;
@@ -19,7 +20,7 @@ export class EventController {
 
       const event = await this.service.createEvent(req.body, correlationId);
 
-      const response: ApiResponse = {
+      const response: ApiResponse<EventModel> = {
         success: true,
         data: event,
         correlationId
@@ -46,7 +47,7 @@ export class EventController {
       logger.info(logMessage, { correlationId, filters });
 
       const events = await this.service.getAllEvents(filters, correlationId);
-      const response: ApiResponse = {
+      const response: ApiResponse<EventModel[]> = {
         success: true,
         data: events,
         correlationId
