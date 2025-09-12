@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "es2024",
-    "module": "ES2022",
+    "module": "commonjs", // ✅ Cambiar a commonjs
     "moduleResolution": "node",
     "rootDir": "src",
     "outDir": "dist/",
@@ -12,12 +12,11 @@
     "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
-    },
+      "@/*": ["src/*"]
+    }
   },
   "ts-node": {
-    "require": ["tsconfig-paths/register"],
-    "esm": true
+    "require": ["tsconfig-paths/register"]
   },
   "include": ["src/**/*.ts", "src/**/*.d.ts"]
 }
