@@ -142,13 +142,14 @@ pnpm dev
 ## Variables de Entorno
 
 ```env
-PORT
-POSTGRES_USER
-POSTGRES_DB
-POSTGRES_PASSWORD
-POSTGRES_URL
-LOG_LEVEL
-GEMINI_API_KEY
+# Variables de entorno para desarrollo
+PORT=3000
+POSTGRES_USER=postgres
+POSTGRES_DB=signal-watcher-db
+POSTGRES_PASSWORD=postgres
+POSTGRES_URL=postgresql://postgres:postgres@localhost:5432/signal-watcher-db
+LOG_LEVEL=info
+GEMINI_API_KEY=TU_API_KEY_DE_GEMINI
 ```
 
 ## Uso de la API
