@@ -1,5 +1,6 @@
 import rateLimit from "express-rate-limit";
 import { Request, Response } from "express";
+import { getClientIP } from "../get-client-ip";
 
 export const generalRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -38,7 +39,8 @@ export const aiRateLimit = rateLimit({
     });
   },
   keyGenerator: (req: Request) => {
-    return `ai_${req.ip}_${req.path}`;
+    const ip = getClientIP(req);
+    return `ai_${ip}_${req.path}`;
   }
 });
 
@@ -60,6 +62,7 @@ export const criticalAiRateLimit = rateLimit({
     });
   },
   keyGenerator: (req: Request) => {
-    return `daily_ai_${req.ip}`;
+    const ip = getClientIP(req);
+    return `daily_ai_${ip}`;
   }
 });
