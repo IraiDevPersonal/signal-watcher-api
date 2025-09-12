@@ -193,6 +193,30 @@ Utilizar Docker Compose para orquestar PostgreSQL en desarrollo.
 
 ---
 
+### ADR-010: Enfoque en Pruebas
+
+- **Estado**: Pendiente
+- **Fecha**: 2024-09-12
+- **Contexto**: Necesidad de definir la estrategia de pruebas para la aplicación.
+
+#### Decisión
+
+No implementar pruebas automatizadas en la versión inicial del proyecto.
+
+#### Justificación
+
+- **Enfoque en Calidad**: Se prefiere no implementar pruebas solo por cumplir sin un entendimiento profundo de las mejores prácticas.
+- **Aprendizaje**: Se reconoce la importancia de las pruebas, pero se requiere tiempo para aprender a implementarlas correctamente.
+- **Prioridades**: Se prioriza la funcionalidad principal sobre la cobertura de pruebas en esta etapa inicial.
+- **Futuro**: Se planea implementar pruebas una vez que se adquiera el conocimiento necesario para hacerlo de manera efectiva.
+
+#### Consecuencias
+
+- **Positivas**: Evita implementaciones apresuradas de pruebas que podrían ser inefectivas o contraproducentes.
+- **Negativas**: Menor cobertura de pruebas en la versión inicial, lo que podría afectar la detección temprana de errores.
+
+---
+
 ### ADR-009: Manejo Centralizado de Errores
 
 **Estado**: Aceptado
