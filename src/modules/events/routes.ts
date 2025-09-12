@@ -5,6 +5,7 @@ import { validateSchemaMiddleware } from "@/lib/middlewares/validate-schema.midd
 import { CreateEventSchema } from "./models/create-event-payload";
 import { WatchListService } from "../watchlist/service";
 import { correlationIdMiddleware } from "@/lib/middlewares/correlation-id.middleware";
+import { aiRateLimit, criticalAiRateLimit } from "@/lib/middlewares/rate-limit.middleware";
 
 export class EventRoutes {
   private static readonly watchListService = new WatchListService();
@@ -17,7 +18,12 @@ export class EventRoutes {
     router.get("/", correlationIdMiddleware, this.controller.getAllEvents);
     router.post(
       "/",
-      [correlationIdMiddleware, validateSchemaMiddleware(CreateEventSchema)],
+      [
+        correlationIdMiddleware,
+        validateSchemaMiddleware(CreateEventSchema),
+        aiRateLimit,
+        criticalAiRateLimit
+      ],
       this.controller.simulateEvent
     );
 

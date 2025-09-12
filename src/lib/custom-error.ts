@@ -31,7 +31,7 @@ export class CustomError extends Error {
 
     return res.status(statusCode).json({
       code: statusCode,
-      errors: message,
+      error: message,
       correlationId: res.locals.correlationId || "desconocido"
     });
   };

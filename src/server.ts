@@ -1,6 +1,7 @@
 import cors from "cors";
 import express, { Router } from "express";
 import helmet from "helmet";
+import { generalRateLimit } from "./lib/middlewares/rate-limit.middleware";
 
 type Options = {
   port: number;
@@ -23,6 +24,7 @@ export class Server {
     this.app.use(helmet());
     this.app.use(cors());
     this.app.use(express.json());
+    this.app.use(generalRateLimit);
 
     //* Routes
     this.app.use(this.routes);

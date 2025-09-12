@@ -217,22 +217,27 @@ Implementar clase CustomError centralizada para manejo de errores con tipos espe
 
 ---
 
-## Decisiones Pendientes
+### Rate Limiting
+
+**Estado**: Aceptado
+**Fecha**: 2024-09-12
+**Contexto**: Para proteger la API de abuso y controlar costos de Gemini AI (de aplicarse en caso de plan de pago).
+**Decisión**: Implementar middleware de rate limiting personalizado.
+
+#### Justificación
+
+- **Seguridad**: Protege la API de abuso
+- **Costos**: Controla costos de Gemini AI (de aplicarse en caso de plan de pago)
+
+#### Consecuencias
+
+- **Positivas**: Mejor seguridad, control de costos
+- **Negativas**: Implementación adicional, una dependencia adicional y suma complejidad al proyecto
+
+---
 
 ### Migración a Redis
 
 **Estado**: Pendiente
 **Contexto**: Cuando la aplicación escale, el caché en memoria puede ser insuficiente.
 **Consideraciones**: El patrón adapter actual facilita esta migración sin cambios en lógica de negocio.
-
-### Implementación de Rate Limiting
-
-**Estado**: Pendiente
-**Contexto**: Para proteger la API de abuso y controlar costos de Gemini AI.
-**Consideraciones**: Evaluar entre implementación custom o usar middleware como express-rate-limit.
-
-### Monitoreo y Métricas
-
-**Estado**: Pendiente
-**Contexto**: Necesidad de observabilidad en producción.
-**Consideraciones**: Evaluar Prometheus + Grafana vs servicios cloud como DataDog.

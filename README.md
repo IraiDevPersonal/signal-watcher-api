@@ -156,6 +156,7 @@ GEMINI_API_KEY
 ### Health Check
 
 #### Verificar Estado de la Aplicación
+
 **GET** `/health`
 
 Verifica que la aplicación esté funcionando correctamente.
@@ -366,9 +367,8 @@ Todos los endpoints pueden devolver errores con el siguiente formato:
 
 ```json
 {
-  "success": false,
+  "code": 400,
   "error": "Validation failed",
-  "message": "El campo 'name' es requerido",
   "correlationId": "req-error-123"
 }
 ```
@@ -377,9 +377,8 @@ Todos los endpoints pueden devolver errores con el siguiente formato:
 
 ```json
 {
-  "success": false,
+  "code": 404,
   "error": "Not Found",
-  "message": "No se encontró la watchlist",
   "correlationId": "req-error-456"
 }
 ```
@@ -388,9 +387,8 @@ Todos los endpoints pueden devolver errores con el siguiente formato:
 
 ```json
 {
-  "success": false,
+  "code": 500,
   "error": "Internal Server Error",
-  "message": "Error interno del servidor",
   "correlationId": "req-error-789"
 }
 ```
