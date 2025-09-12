@@ -23,6 +23,7 @@ export async function enrichEvent(
       2. Classify severity as one of: LOW, MED, HIGH, CRITICAL. Take into account the watchlist terms.
       3. Suggest the next action for an analyst.
       Answer in JSON with keys: aiSummary, severity, aiSuggestion.
+      4. The aiSummary and aiSuggestion must be in Spanish.
     `;
 
     const response = (await aiClient({
